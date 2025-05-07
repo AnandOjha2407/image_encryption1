@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SIRDS Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            text-align: center;
+        }
+        img {
+            margin: 10px;
+            width: 100%;  /* Set the width to 100% to make it responsive */
+            max-width: 600px; /* Limit the max width to 600px (adjust as needed) */
+            height: auto;  /* Ensure the height adjusts automatically */
+            border: 1px solid #ccc;
+        }
+        .section {
+            margin-top: 40px;
+        }
+        .slider {
+            width: 50%;
+            margin-top: 20px;
+        }
+        .image-container {
+            position: relative;
+            display: inline-block;
+        }
+        .depth-map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            mix-blend-mode: luminosity;
+        }
+        .original-image {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+    
+</head>
+<body>
+
+    <h1>SIRDS Generator</h1>
+
+    <!-- Upload form -->
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="image" required>
+        <button type="submit">Upload</button>
+    </form>
+
+    {% if uploaded_image %}
+    <div class="section">
+        <h2>Uploaded Image</h2>
+        <img src="{{ uploaded_image }}" alt="Uploaded Image">
+        <form method="POST" action="/generate_depth">
+            <button type="submit">Generate Depth Maps</button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if depth_maps %}
+    <div class="section">
+        <h2>Depth Maps</h2>
+        {% for path in depth_maps %}
+            <img src="{{ path }}" alt="Depth Map">
+        {% endfor %}
+        <form method="POST" action="/generate_sirds">
+            <button type="submit">Generate SIRDS</button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if sirds_images %}
+    <div class="section">
+        <h2>SIRDS Images</h2>
+        <form method="POST" action="/combine">
+            {% for path in sirds_images %}
+                <label>
+                    <input type="checkbox" name="sirds" value="{{ loop.index0 }}"> 
+                    <img src="{{ path }}" alt="SIRDS Image {{ loop.index }}">
+                </label>
+            {% endfor %}
+            <div>
+                <button type="submit">Combine Selected</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if combined_image %}
+    <div class="section">
+        <h2>Resulting Depth Map</h2>
+        
+        <!-- Image container with both original and depth map images -->
+        <div class="image-container">
+            <img id="originalImage" class="original-image" src="{{ uploaded_image }}" alt="Original Image" style="display: block;">
+            <img id="depthMapImage" class="depth-map" src="{{ combined_image }}" alt="Combined Result">
+        </div>
+
+        <!-- Slider to adjust the blending -->
+        <div>
+            <input type="range" id="colorSlider" class="slider" min="0" max="100" value="0" step="1">
+            <label for="colorSlider">Adjust Color (0 - 100)</label>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        // Get the depth map and original image elements
+        const depthMapImage = document.getElementById('depthMapImage');
+        const originalImage = document.getElementById('originalImage');
+        const colorSlider = document.getElementById('colorSlider');
+
+        // Function to adjust color based on slider
+        colorSlider.addEventListener('input', function() {
+            const blendValue = colorSlider.value / 100; // 0 to 1 scale
+
+            // Control the opacity of the depth map and original image
+            depthMapImage.style.opacity = `${1 - blendValue}`;
+            originalImage.style.opacity = `${blendValue}`;
+        });
+    </script>
+
+</body>
+</html>
